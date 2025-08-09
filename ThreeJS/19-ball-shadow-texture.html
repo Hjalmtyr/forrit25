@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Kúla með skuggamynstri</title> 
+	</head>
+	<body>
+        <canvas id="c"  width="800" height="800"></canvas>
+		<script src="js/three.js"></script>
+        <script src="js/examples/js/controls/OrbitControls.js"></script>
+		<script>
+            // Ná í striga
+            const canvas = document.querySelector('#c');
+
+            // Skilgreina sviðsnet
+			const scene = new THREE.Scene();
+            scene.background = new THREE.Color('white');
+            
+            // Skilgreina myndavél og staðsetja hana
+			const camera = new THREE.PerspectiveCamera( 75, canvas.clientWidth/canvas.clientHeight, 0.1, 1000 );
+			camera.position.set(0, 3, 8);
+
+            // Bæta við músarstýringu
+            const controls = new THREE.OrbitControls( camera, canvas );
+
+            // Skilgreina birtingaraðferð með afbjögun (antialias)
+			const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+
+            // Hlöðum inn skuggamynstri
+            const loader = new THREE.TextureLoader();
+            const shadowTexture = loader.load('resources/images/roundshadow.png');
+
+            // Búa til nýjan hlut með kúlunni og skugganum, svo þau hreyfist saman
+            const base = new THREE.Object3D();
+            scene.add(base);
+
+            // Skugginn hefur skuggamynstrið sem áferð og er gegnsær
+            const shadowMat = new THREE.MeshBasicMaterial({
+                map: shadowTexture,
+                transparent: true,    // svo gólfið sjáist í gegn
+                depthWrite: false,    // slökkva á dýptarminni
+            });
+            const shadowGeo = new THREE.PlaneGeometry(1, 1);
+            const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+            shadow.position.y = 0.001;   // til að við séum aðeins fyrir ofan gólfið
+            shadow.rotation.x = Math.PI * -.5;
+            shadow.scale.set(2, 2, 2);
+            base.add(shadow);
+
+            // Búa til kúlu með Phong áferð og bæta nýja hlutinn (kúla og skuggi)
+			const ballGeometry = new THREE.SphereGeometry( 0.5, 32, 16 );
+			const ballMaterial = new THREE.MeshPhongMaterial( { color: 0xbbaa44 } );
+			const ball = new THREE.Mesh( ballGeometry, ballMaterial );
+            const ballHeight = 1.5;
+            ball.position.set(0, ballHeight, 0);
+			base.add( ball );
+
+            // Búa til gólfið með Phong áferð
+            const planeGeometry = new THREE.PlaneGeometry( 10, 10 );
+            const planeMaterial = new THREE.MeshBasicMaterial( { color: 0xdddddd } );
+            const plane = new THREE.Mesh( planeGeometry, planeMaterial );
+            plane.rotation.x = -0.5 * Math.PI;
+            scene.add( plane );
+            
+            
+            // Skilgreina ljósgjafa og bæta honum í sviðsnetið
+            const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+            light.position.set(2, 4, 1);
+            scene.add(light);
+
+            // Hreyfifall
+			const animate = function ( time ) {
+                time *= 0.001;  // breyta í sekúndur
+
+                // látum skuggahlutinn færast í hringi
+                const speed = time * .2;
+                const angle = speed + 2 * Math.PI;
+                const radius = Math.sin(speed) * 4;
+                base.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+
+                // breytan yOffset sveiflast á milli 0 og 1
+                const yOffset = Math.abs(Math.sin(time * 2));
+                
+                // færa kúluna upp og niður eftir yOffset
+                ball.position.y = ballHeight + THREE.MathUtils.lerp(-1, 1, yOffset);
+                
+                // gerum skuggann gegnsærri eftir því sem kúlan er lengra frá gólfinu
+                shadow.material.opacity = THREE.MathUtils.lerp(1, .25, yOffset);
+
+				requestAnimationFrame( animate );
+
+                controls.update();
+				renderer.render( scene, camera );
+			};
+
+			animate();
+		</script>
+	</body>
+</html>
