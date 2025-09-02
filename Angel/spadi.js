@@ -2,7 +2,7 @@
 //    Sýnidæmi í Tölvugrafík
 //     Sýnir notkun á "mousedown" og "mousemove" atburðum
 //
-//    Hjálmtýr Hafsteinsson, september 2023
+//    Hjálmtýr Hafsteinsson, september 2025
 /////////////////////////////////////////////////////////////////
 var canvas;
 var gl;
