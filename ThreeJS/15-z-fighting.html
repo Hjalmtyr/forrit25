@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Sýnidæmi um Z-árekstur</title> 
+	</head>
+	<body>
+        <canvas id="c"  width="800" height="800"></canvas>
+		<script src="js/three.js"></script>
+        <script src="js/examples/js/controls/OrbitControls.js"></script>
+		<script src="js/examples/js/libs/dat.gui.min.js"></script>
+        <script>
+            // Ná í striga
+            const canvas = document.querySelector('#c');
+
+            // Skilgreina sviðsnet
+			const scene = new THREE.Scene();
+            scene.background = new THREE.Color('black');
+            
+
+            // Skilgreina myndavél og staðsetja hana
+			const camera = new THREE.PerspectiveCamera( 60, canvas.clientWidth/canvas.clientHeight, 0.00001, 100 );
+			camera.position.set(1, 4, 8);
+
+            // Klasi sem tryggir að 'near'-gildið í valmyndinni sé alltaf minna en 'far'-gildið
+            class MinMaxGUIHelper {
+                constructor(obj, minProp, maxProp, minDif) {
+                  this.obj = obj;
+                  this.minProp = minProp;
+                  this.maxProp = maxProp;
+                  this.minDif = minDif;
+                }
+                get min() {
+                  return this.obj[this.minProp];
+                }
+                set min(v) {
+                  this.obj[this.minProp] = v;
+                  this.obj[this.maxProp] = Math.max(this.obj[this.maxProp], v + this.minDif);
+                }
+                get max() {
+                  return this.obj[this.maxProp];
+                }
+                set max(v) {
+                  this.obj[this.maxProp] = v;
+                  this.min = this.min;  // this will call the min setter
+                }
+              }
+
+            // Þarf að uppfæra ofanvörpunarfylki ef stikar myndavélar breytast
+            function updateCamera() {
+                camera.updateProjectionMatrix();
+            }
+
+            // Skilgreina valmynd til að breyta 'fov', 'near' og 'far'
+            const gui = new dat.GUI();
+            gui.add(camera, 'fov', 1, 180).onChange(updateCamera);
+            const minMaxGUIHelper = new MinMaxGUIHelper(camera, 'near', 'far', 0.1);
+            gui.add(minMaxGUIHelper, 'min', 0.00001, 10, 0.00001).name('near').onChange(updateCamera);
+            gui.add(minMaxGUIHelper, 'max', 0.1, 100, 0.1).name('far').onChange(updateCamera);
+
+            // Bæta við músarstýringu
+            const controls = new THREE.OrbitControls( camera, canvas );
+
+            // Skilgreina birtingaraðferð með afbjögun (antialias)
+			const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+
+
+            // Búa til sléttu með Phong áferð
+            const planeGeometry = new THREE.PlaneGeometry( 20, 20 );
+            const planeMaterial = new THREE.MeshPhongMaterial( { color: 0xcccccc } );
+            const plane = new THREE.Mesh( planeGeometry, planeMaterial );
+            plane.rotation.x = -0.5 * Math.PI;
+            plane.position.set(0, -0.5, 0);
+            scene.add( plane );
+            
+
+            // Búum til nokkrar kúlur
+            const sphereRadius = 1;
+            const sphereGeo = new THREE.SphereGeometry(1, 32, 16);
+            const numSpheres = 20;
+            for (let i = 0; i < numSpheres; ++i) {
+                const sphereMat = new THREE.MeshPhongMaterial();
+                sphereMat.color.setHSL(i * .73, 1, 0.5);
+                const mesh = new THREE.Mesh(sphereGeo, sphereMat);
+                mesh.position.set(-sphereRadius-1, sphereRadius, i * sphereRadius * -1.2);
+                scene.add(mesh);
+            }
+
+            
+            // Skilgreina ljósgjafa og bæta honum í sviðsnetið
+            const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+            light.position.set(0, 10, 0);
+            light.target.position.set(-5, 0, 0);
+            scene.add(light);
+            scene.add(light.target);
+
+            
+            // Hreyfifall
+			const animate = function () {
+				requestAnimationFrame( animate );
+
+                controls.update();
+				renderer.render( scene, camera );
+			};
+
+			animate();
+		</script>
+	</body>
+</html>
